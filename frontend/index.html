@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Prototype giao diện SmartFinance - quản lý tài chính cá nhân">
+  <title>SmartFinance — Tài chính rõ ràng, mỗi ngày</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section class="auth-screen" id="auth-screen" aria-label="Đăng nhập SmartFinance">
+    <div class="auth-intro"><a class="brand" href="/"><span class="brand-mark">S</span><span>Smart<span>Finance</span></span></a><div><p class="eyebrow">TÀI CHÍNH RÕ RÀNG, MỖI NGÀY</p><h1>Biết tiền của bạn<br>đang đi về đâu.</h1><p>Theo dõi chi tiêu, chủ động ngân sách và nhận cảnh báo sớm trước khi vượt mức.</p></div><small>Riêng tư theo thiết kế · Không kết nối tài khoản ngân hàng</small></div>
+    <div class="auth-form-wrap">
+      <form class="auth-form" id="login-form"><p class="eyebrow">CHÀO MỪNG TRỞ LẠI</p><h2>Đăng nhập</h2><p>Tiếp tục hành trình tài chính của bạn.</p><label>Email<input name="email" type="email" autocomplete="email" required placeholder="ban@example.com"></label><label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required placeholder="Tối thiểu 10 ký tự"></label><p class="form-error" role="alert"></p><button class="primary-btn full" type="submit">Đăng nhập</button><p class="auth-switch">Chưa có tài khoản? <button type="button" data-auth="register">Đăng ký ngay</button></p></form>
+      <form class="auth-form hidden" id="register-form"><p class="eyebrow">BẮT ĐẦU AN TOÀN</p><h2>Tạo tài khoản</h2><div class="form-grid two"><label>Họ và tên<input name="full_name" required></label><label>Ngày sinh<input name="date_of_birth" type="date" required></label></div><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Mật khẩu<input name="password" type="password" autocomplete="new-password" minlength="10" required></label><label class="consent"><input name="consent" type="checkbox"><span id="privacy-notice">Tôi đồng ý cho hệ thống xử lý dữ liệu nhằm quản lý tài chính cá nhân.</span></label><p class="form-error" role="alert"></p><button class="primary-btn full" type="submit">Tạo tài khoản</button><p class="auth-switch">Đã có tài khoản? <button type="button" data-auth="login">Đăng nhập</button></p></form>
+    </div>
+  </section>
+  <div id="app-shell" class="hidden">
+  <aside class="sidebar" aria-label="Điều hướng chính">
+    <a class="brand" href="#dashboard" aria-label="SmartFinance - Trang chủ">
+      <span class="brand-mark">S</span><span>Smart<span>Finance</span></span>
+    </a>
+    <nav class="nav-list">
+      <a class="nav-item active" href="#dashboard" data-view="dashboard"><span>⌂</span>Tổng quan</a>
+      <a class="nav-item" href="#transactions" data-view="transactions"><span>↕</span>Giao dịch</a>
+      <a class="nav-item" href="#import" data-view="import"><span>⇧</span>Nhập sao kê</a>
+      <a class="nav-item" href="#budgets" data-view="budgets"><span>◫</span>Ngân sách</a>
+      <a class="nav-item" href="#alerts" data-view="alerts"><span>♢</span>Cảnh báo <b class="nav-badge">3</b></a>
+      <a class="nav-item" href="#statistics" data-view="statistics"><span>⌁</span>Thống kê</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="privacy-note"><span>✓</span><p><b>Dữ liệu của bạn</b><br>Riêng tư và chỉ thuộc về bạn</p></div>
+      <button class="profile-mini" type="button" data-action="profile"><span class="avatar">LA</span><span><b>Lan Anh</b><small>lan***@gmail.com</small></span><span>⋯</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-toggle" type="button" aria-label="Mở menu">☰</button>
+      <div class="breadcrumb"><span id="page-kicker">Tài chính cá nhân</span><b id="page-title">Tổng quan</b></div>
+      <div class="top-actions">
+        <button class="icon-btn notification-btn" type="button" data-go="alerts" aria-label="Cảnh báo mới">♢<span></span></button>
+        <button class="secondary-btn" type="button" data-action="accounts">Tài khoản</button><button class="primary-btn" type="button" data-action="add-transaction">＋ Giao dịch mới</button>
+      </div>
+    </header>
+
+    <section class="view active" id="dashboard" data-title="Tổng quan" data-kicker="Tài chính cá nhân">
+      <div class="welcome-row">
+        <div><p class="eyebrow">THỨ TƯ, 19 THÁNG 8</p><h1>Chào buổi tối, Lan Anh <span>👋</span></h1><p>Tháng này của bạn đang đi đúng hướng. Cùng xem chi tiết nhé.</p></div>
+        <div class="month-switch"><button type="button">‹</button><b>Tháng 8, 2026</b><button type="button">›</button></div>
+      </div>
+
+      <div class="metric-grid" id="dashboard-metrics">
+        <article class="metric-card accent"><div class="metric-head"><span class="metric-icon mint">↗</span><span class="pill positive">+8,4%</span></div><p>Thu nhập tháng này</p><strong>32.500.000 ₫</strong><small>So với 29.980.000 ₫ tháng trước</small></article>
+        <article class="metric-card"><div class="metric-head"><span class="metric-icon coral">↘</span><span class="pill negative">+12,1%</span></div><p>Chi tiêu tháng này</p><strong>18.240.000 ₫</strong><small>So với 16.270.000 ₫ tháng trước</small></article>
+        <article class="metric-card safe-card"><div class="metric-head"><span class="metric-icon blue">◇</span><span class="info-dot" title="Số dư trừ chi phí cam kết, dự báo bán cố định và mục tiêu tiết kiệm">i</span></div><p>An toàn để chi tiêu</p><strong>7.860.000 ₫</strong><div class="safe-track"><i style="width:62%"></i></div><small>Còn 12 ngày trong tháng</small></article>
+        <article class="metric-card"><div class="metric-head"><span class="metric-icon violet">◎</span><span class="pill neutral">43,9%</span></div><p>Tỷ lệ tiết kiệm</p><strong>14.260.000 ₫</strong><small>Mục tiêu tháng: 12.000.000 ₫</small></article>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="panel budget-panel">
+          <div class="panel-head"><div><p class="eyebrow">NGÂN SÁCH THÁNG 8</p><h2>Tiến độ theo danh mục</h2></div><button class="text-btn" data-go="budgets">Xem tất cả →</button></div>
+          <div class="budget-list" id="dashboard-budgets">
+            <div class="budget-row"><span class="cat-icon food">♨</span><div><b>Ăn uống</b><small>4.160.000 ₫ / 5.000.000 ₫</small><div class="progress"><i class="warning" style="width:83%"></i></div></div><strong class="status warning-text">83%<small>Sắp chạm mức</small></strong></div>
+            <div class="budget-row"><span class="cat-icon home">⌂</span><div><b>Nhà ở</b><small>6.500.000 ₫ / 7.000.000 ₫</small><div class="progress"><i class="good" style="width:93%"></i></div></div><strong class="status good-text">93%<small>Trong kế hoạch</small></strong></div>
+            <div class="budget-row"><span class="cat-icon travel">◆</span><div><b>Di chuyển</b><small>1.890.000 ₫ / 2.500.000 ₫</small><div class="progress"><i class="good" style="width:76%"></i></div></div><strong class="status good-text">76%<small>Trong kế hoạch</small></strong></div>
+            <div class="budget-row"><span class="cat-icon shop">▱</span><div><b>Mua sắm</b><small>3.240.000 ₫ / 3.000.000 ₫</small><div class="progress"><i class="danger" style="width:100%"></i></div></div><strong class="status danger-text">108%<small>Đã vượt mức</small></strong></div>
+          </div>
+        </article>
+
+        <article class="panel alert-preview">
+          <div class="panel-head"><div><p class="eyebrow">CẦN CHÚ Ý</p><h2>Cảnh báo thông minh</h2></div><span class="count-badge">3 mới</span></div>
+          <div class="alert-card danger-alert"><span>!</span><div><b>Mua sắm đã vượt ngân sách</b><p>Bạn đã chi 108% ngân sách. Hãy tạm hoãn các món chưa cần thiết.</p><small>2 giờ trước</small></div></div>
+          <div class="alert-card warning-alert"><span>↗</span><div><b>Ăn uống có thể vượt mức</b><p>Với tốc độ hiện tại, dự kiến cuối tháng sẽ vượt 9%.</p><small>Hôm nay, 06:00</small></div></div>
+          <button class="wide-secondary" data-go="alerts">Mở hộp thư cảnh báo</button>
+        </article>
+      </div>
+
+      <article class="panel recent-panel">
+        <div class="panel-head"><div><p class="eyebrow">HOẠT ĐỘNG GẦN ĐÂY</p><h2>Giao dịch mới nhất</h2></div><button class="text-btn" data-go="transactions">Xem tất cả →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Mô tả</th><th>Danh mục</th><th>Tài khoản</th><th>Ngày</th><th class="align-right">Số tiền</th></tr></thead><tbody id="recent-transactions">
+          <tr><td><span class="merchant-logo">C</span><b>Circle K - Nguyễn Huệ</b></td><td><span class="tag">Ăn uống</span></td><td>Visa •••• 4821</td><td>19/08/2026</td><td class="amount out">− 128.000 ₫</td></tr>
+          <tr><td><span class="merchant-logo green">G</span><b>Grab Việt Nam</b></td><td><span class="tag">Di chuyển</span></td><td>Ví tiền mặt</td><td>18/08/2026</td><td class="amount out">− 86.000 ₫</td></tr>
+          <tr><td><span class="merchant-logo blue-bg">S</span><b>Lương tháng 8</b></td><td><span class="tag">Thu nhập</span></td><td>VCB •••• 2098</td><td>15/08/2026</td><td class="amount in">+ 28.500.000 ₫</td></tr>
+        </tbody></table></div>
+      </article>
+    </section>
+
+    <section class="view" id="transactions" data-title="Giao dịch" data-kicker="Sổ thu chi">
+      <div class="page-heading"><div><p class="eyebrow">SỔ THU CHI</p><h1>Tất cả giao dịch</h1><p>Tìm kiếm, lọc và quản lý các khoản thu chi của bạn.</p></div><button class="primary-btn" data-action="add-transaction">＋ Thêm giao dịch</button></div>
+      <article class="panel filters"><label class="search-box">⌕<input id="transaction-search" placeholder="Tìm trong trang hiện tại..." aria-label="Tìm giao dịch"></label><input id="transaction-month" type="month"><select id="transaction-account" aria-label="Tài khoản"><option value="">Tất cả tài khoản</option></select><select id="transaction-direction" aria-label="Loại giao dịch"><option value="">Tất cả loại</option><option value="OUT">Khoản chi</option><option value="IN">Khoản thu</option></select><button class="icon-btn" id="refresh-transactions" title="Tải lại">↻</button></article>
+      <article class="panel transaction-panel"><div class="table-wrap"><table><thead><tr><th><input type="checkbox" aria-label="Chọn tất cả"></th><th>Giao dịch</th><th>Danh mục</th><th>Tài khoản</th><th>Ngày</th><th class="align-right">Số tiền</th><th></th></tr></thead><tbody id="transaction-rows"></tbody></table></div><div class="pagination"><span>Hiển thị 1–6 trong 48 giao dịch</span><div><button disabled>‹</button><button class="active">1</button><button>2</button><button>3</button><button>›</button></div></div></article>
+    </section>
+
+    <section class="view" id="import" data-title="Nhập sao kê" data-kicker="Nhập dữ liệu">
+      <div class="page-heading"><div><p class="eyebrow">NHẬP DỮ LIỆU AN TOÀN</p><h1>Nhập sao kê ngân hàng</h1><p>Xem trước và kiểm tra mọi giao dịch trước khi lưu.</p></div></div>
+      <ol class="steps"><li class="active"><span>1</span><b>Tải tệp lên</b></li><li><span>2</span><b>Kiểm tra dữ liệu</b></li><li><span>3</span><b>Xử lý trùng lặp</b></li><li><span>4</span><b>Hoàn tất</b></li></ol>
+      <div class="import-grid">
+        <article class="panel upload-panel">
+          <div class="panel-head"><div><p class="eyebrow">BƯỚC 1</p><h2>Chọn nguồn sao kê</h2></div></div>
+          <div class="form-grid two"><label>Tài khoản nhận<select id="import-account"></select></label><label>Mẫu ngân hàng<select id="import-template"></select></label></div>
+          <label class="dropzone" id="dropzone"><input type="file" id="statement-file" accept=".csv,.xlsx"><span class="upload-icon">⇧</span><b>Kéo thả sao kê vào đây</b><p>hoặc <u>chọn tệp từ máy</u></p><small>Hỗ trợ .xlsx, .csv · Tối đa 5 MB</small></label>
+          <div class="security-strip"><span>◈</span><p><b>Tệp của bạn được xử lý riêng tư</b><br>Tệp nguồn tự động xóa trong 24 giờ. Chúng tôi không yêu cầu mật khẩu hay thông tin đăng nhập ngân hàng.</p></div>
+          <button class="primary-btn full" id="preview-import" disabled>Xem trước dữ liệu →</button>
+        </article>
+        <aside class="panel guide-panel"><h3>Trước khi tải lên</h3><ul><li><span>1</span><p><b>Tải sao kê từ ngân hàng</b><br>Chọn định dạng Excel hoặc CSV.</p></li><li><span>2</span><p><b>Không chỉnh sửa cột</b><br>Giữ nguyên cấu trúc tệp gốc.</p></li><li><span>3</span><p><b>Bạn luôn được xem trước</b><br>Chưa có dữ liệu nào được lưu ở bước này.</p></li></ul><div class="supported"><small>ĐÃ HỖ TRỢ</small><div><b>VCB</b><b>TCB</b><b>MB</b></div></div></aside>
+      </div>
+      <article class="panel preview-panel hidden" id="import-preview"></article>
+    </section>
+
+    <section class="view" id="budgets" data-title="Ngân sách" data-kicker="Kế hoạch tháng">
+      <div class="page-heading"><div><p class="eyebrow">KẾ HOẠCH THÁNG 8</p><h1>Ngân sách của bạn</h1><p>Chủ động phân bổ và theo dõi tốc độ chi tiêu.</p></div><div class="heading-actions"><button class="secondary-btn" data-action="toast">Sao chép tháng trước</button><button class="primary-btn" data-action="budget">＋ Thêm ngân sách</button></div></div>
+      <div class="budget-summary"><div><small>TỔNG NGÂN SÁCH</small><strong>24.500.000 ₫</strong></div><div><small>ĐÃ CHI</small><strong>18.240.000 ₫</strong></div><div><small>CÒN LẠI</small><strong class="good-text">6.260.000 ₫</strong></div><div class="ring" style="--value:74"><span><b>74%</b><small>đã dùng</small></span></div></div>
+      <div class="category-cards" id="budget-cards">
+        <article class="category-card"><div><span class="cat-icon home">⌂</span><span><b>Nhà ở</b><small>Chi phí cam kết</small></span><button>⋯</button></div><strong>6.500.000 ₫ <small>/ 7.000.000 ₫</small></strong><div class="progress large"><i class="good" style="width:93%"></i></div><p><span class="good-text">Trong kế hoạch</span><span>Còn 500.000 ₫</span></p></article>
+        <article class="category-card"><div><span class="cat-icon food">♨</span><span><b>Ăn uống</b><small>Chi tiêu linh hoạt</small></span><button>⋯</button></div><strong>4.160.000 ₫ <small>/ 5.000.000 ₫</small></strong><div class="progress large"><i class="warning" style="width:83%"></i></div><p><span class="warning-text">Sắp chạm mức</span><span>Còn 840.000 ₫</span></p></article>
+        <article class="category-card danger-border"><div><span class="cat-icon shop">▱</span><span><b>Mua sắm</b><small>Chi tiêu linh hoạt</small></span><button>⋯</button></div><strong>3.240.000 ₫ <small>/ 3.000.000 ₫</small></strong><div class="progress large"><i class="danger" style="width:100%"></i></div><p><span class="danger-text">Vượt 240.000 ₫</span><span>108%</span></p></article>
+        <article class="category-card"><div><span class="cat-icon travel">◆</span><span><b>Di chuyển</b><small>Chi phí bán cố định</small></span><button>⋯</button></div><strong>1.890.000 ₫ <small>/ 2.500.000 ₫</small></strong><div class="progress large"><i class="good" style="width:76%"></i></div><p><span class="good-text">Trong kế hoạch</span><span>Còn 610.000 ₫</span></p></article>
+      </div>
+    </section>
+
+    <section class="view" id="alerts" data-title="Cảnh báo" data-kicker="Trợ lý tài chính">
+      <div class="page-heading"><div><p class="eyebrow">TRỢ LÝ TÀI CHÍNH</p><h1>Hộp thư cảnh báo</h1><p>Hiểu lý do, mức độ và hành động nên làm tiếp theo.</p></div><button class="secondary-btn" id="mark-all">Đánh dấu tất cả đã đọc</button></div>
+      <div class="alert-layout"><div class="alert-tabs"><button class="active" data-alert-filter="ALL">Tất cả <span id="alert-total">0</span></button><button data-alert-filter="UNREAD">Chưa đọc <span id="alert-unread">0</span></button><button data-alert-filter="DISMISSED">Đã xử lý</button></div><div class="alert-inbox" id="alert-inbox">
+        <article class="inbox-item unread critical"><span class="inbox-icon">!</span><div><div><span class="severity">NGHIÊM TRỌNG</span><small>2 giờ trước</small></div><h3>Ngân sách Mua sắm đã vượt 100%</h3><p>Bạn đã chi <b>3.240.000 ₫</b>, cao hơn 240.000 ₫ so với ngân sách tháng.</p><div class="suggestion"><b>Gợi ý hành động</b><span>Tạm hoãn các món chưa cần thiết đến tháng sau.</span></div><footer><button>Đã hiểu</button><button class="dismiss">Bỏ qua</button></footer></div></article>
+        <article class="inbox-item unread projected"><span class="inbox-icon">↗</span><div><div><span class="severity">DỰ BÁO VƯỢT MỨC</span><small>Hôm nay, 06:00</small></div><h3>Ăn uống có thể vượt ngân sách 9%</h3><p>Dựa trên nhịp chi 6 tháng gần nhất, cuối tháng có thể đạt <b>5.450.000 ₫</b>.</p><div class="suggestion"><b>Gợi ý hành động</b><span>Giới hạn chi ăn uống còn 70.000 ₫ mỗi ngày.</span></div><footer><button>Đã hiểu</button><button class="dismiss">Bỏ qua</button></footer></div></article>
+        <article class="inbox-item unread threshold"><span class="inbox-icon">80</span><div><div><span class="severity">CHẠM NGƯỠNG 80%</span><small>Hôm qua</small></div><h3>Ngân sách Ăn uống đã dùng 83%</h3><p>Bạn còn 840.000 ₫ cho 12 ngày còn lại trong tháng.</p><div class="suggestion"><b>Gợi ý hành động</b><span>Lên kế hoạch bữa ăn trước cho tuần tới.</span></div><footer><button>Đã hiểu</button><button class="dismiss">Bỏ qua</button></footer></div></article>
+      </div></div>
+    </section>
+
+    <section class="view" id="statistics" data-title="Thống kê" data-kicker="Phân tích chi tiêu">
+      <div class="page-heading"><div><p class="eyebrow">PHÂN TÍCH CHI TIÊU</p><h1>Thống kê tài chính</h1><p>Nhìn rõ tiền của bạn đã đi đâu và thay đổi thế nào.</p></div><select><option>12 tháng gần nhất</option><option>6 tháng gần nhất</option></select></div>
+      <div class="stats-grid"><article class="panel breakdown"><div class="panel-head"><div><p class="eyebrow">THÁNG 8</p><h2>Chi tiêu theo danh mục</h2></div><b>18.240.000 ₫</b></div><div class="donut-wrap"><div class="donut"><span><b>18,2tr</b><small>Tổng chi</small></span></div><ul><li><i class="c1"></i><span>Nhà ở</span><b>35,6%</b></li><li><i class="c2"></i><span>Ăn uống</span><b>22,8%</b></li><li><i class="c3"></i><span>Mua sắm</span><b>17,8%</b></li><li><i class="c4"></i><span>Di chuyển</span><b>10,4%</b></li><li><i class="c5"></i><span>Khác</span><b>13,4%</b></li></ul></div></article>
+      <article class="panel trend"><div class="panel-head"><div><p class="eyebrow">XU HƯỚNG</p><h2>Thu nhập và chi tiêu</h2></div><div class="legend"><span><i class="income-dot"></i>Thu nhập</span><span><i class="expense-dot"></i>Chi tiêu</span></div></div><div class="chart"><div class="y-labels"><span>40tr</span><span>30tr</span><span>20tr</span><span>10tr</span><span>0</span></div><div class="chart-area"><i></i><i></i><i></i><i></i><i></i><svg viewBox="0 0 700 220" preserveAspectRatio="none" aria-label="Biểu đồ xu hướng 12 tháng"><polyline class="income-line" points="0,80 64,75 128,76 192,62 256,69 320,64 384,50 448,59 512,54 576,43 640,49 700,35"/><polyline class="expense-line" points="0,150 64,142 128,158 192,134 256,145 320,123 384,138 448,119 512,130 576,108 640,116 700,101"/></svg><div class="x-labels"><span>T9</span><span>T10</span><span>T11</span><span>T12</span><span>T1</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>T8</span></div></div></div></article></div>
+    </section>
+  </main></div>
+
+  <dialog id="transaction-modal">
+    <form method="dialog" id="transaction-form">
+      <header><div><p class="eyebrow">GHI NHẬN THỦ CÔNG</p><h2>Thêm giao dịch mới</h2></div><button class="close-btn" value="cancel" aria-label="Đóng">×</button></header>
+      <div class="direction-toggle"><label><input type="radio" name="direction" value="OUT" checked><span>Khoản chi</span></label><label><input type="radio" name="direction" value="IN"><span>Khoản thu</span></label></div>
+      <label class="amount-input">Số tiền<div><input name="amount" inputmode="numeric" placeholder="0" required><b>₫</b></div></label>
+      <div class="form-grid two"><label>Ngày giao dịch<input name="date" type="date" required></label><label>Tài khoản<select name="account_id" required></select></label><label>Danh mục<select name="category_id" required></select></label><label>Mô tả<input name="description" placeholder="Ví dụ: Cà phê cùng bạn"></label></div>
+      <footer><button class="secondary-btn" value="cancel">Hủy</button><button class="primary-btn" value="default" id="save-transaction">Lưu giao dịch</button></footer>
+    </form>
+  </dialog>
+  <dialog id="accounts-modal"><form method="dialog" id="account-form"><header><div><p class="eyebrow">NGUỒN TIỀN</p><h2>Tài khoản của tôi</h2></div><button class="close-btn" value="cancel">×</button></header><div id="account-list" class="account-list"></div><h3>Thêm tài khoản</h3><div class="form-grid two"><label>Tên tài khoản<input name="name" required placeholder="Ví dụ: VCB chính"></label><label>Loại<select name="type"><option value="CASH">Tiền mặt</option><option value="BANK">Ngân hàng</option></select></label><label>Số dư đầu kỳ<input name="opening_balance" inputmode="numeric" value="0" required></label><label class="bank-only hidden">4 số cuối<input name="last_four" maxlength="4" inputmode="numeric"></label><label class="bank-only hidden">Mã ngân hàng<input name="bank_code" placeholder="VCB"></label></div><p class="form-error"></p><footer><button class="secondary-btn logout-btn" type="button" id="logout">Đăng xuất</button><button class="secondary-btn" value="cancel">Đóng</button><button class="primary-btn" id="save-account" value="default">Thêm tài khoản</button></footer></form></dialog>
+  <div class="toast" id="toast" role="status"><span>✓</span><p><b>Đã cập nhật</b><small>Thao tác demo đã hoàn tất.</small></p></div>
+  <script src="app.js"></script>
+</body>
+</html>
