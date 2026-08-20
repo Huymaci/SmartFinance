@@ -22,3 +22,7 @@ Sau đó truy cập `http://127.0.0.1:5000`. Không mở `index.html` trực ti�
 - Thống kê danh mục và xu hướng 12 tháng (UC-09)
 
 `app.js` dùng session cookie và CSRF token của Flask. UI có trạng thái rỗng/lỗi, định dạng ngày Việt Nam và VND; không còn dùng mock data cho các màn hình vận hành.
+
+## Ngôn ngữ
+
+Nút `VI | EN` có ở màn hình xác thực và header ứng dụng. Dictionary nằm trong `i18n.js`; lựa chọn được lưu tại `localStorage` với key `smartfinance-language` và mặc định là `vi`. Nội dung do người dùng hoặc backend trả về như tên, email, tên tài khoản, mô tả giao dịch và nội dung cảnh báo không bị dịch hay thay đổi.

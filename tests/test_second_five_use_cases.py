@@ -125,8 +125,10 @@ class SecondFiveUseCasesTest(unittest.TestCase):
         dashboard = self.client.get("/statistics/dashboard?month=2026-08").get_json()
         self.assertEqual((dashboard["income"], dashboard["expense"], dashboard["net"]), (200_000, 85_000, 115_000))
         self.assertEqual((dashboard["budget_progress"][0]["status"], dashboard["budget_progress"][0]["label"]), ("AMBER", "Sắp chạm ngân sách"))
-        breakdown = self.client.get("/statistics/breakdown?date_from=2026-08-01&date_to=2026-08-31").get_json()["items"]
+        breakdown_response = self.client.get("/statistics/breakdown?date_from=2026-08-01&date_to=2026-08-31").get_json()
+        breakdown = breakdown_response["items"]
         self.assertEqual(breakdown[0]["amount"], 85_000)
+        self.assertEqual(breakdown_response["total_expense"], sum(item["amount"] for item in breakdown_response["items"]))
         self.assertEqual(len(self.client.get("/statistics/trend?through=2026-08").get_json()["items"]), 12)
 
     def test_uc11_admin_metadata_only_lock_reset_config_suppression_and_delete(self):

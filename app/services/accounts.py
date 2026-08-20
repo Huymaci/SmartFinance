@@ -41,3 +41,10 @@ def archive(user, account_id):
     account = owned_or_404(AccountRepository.owned(account_id, user.id))
     account.archived = True
     db.session.commit()
+
+
+def restore(user, account_id):
+    account = owned_or_404(AccountRepository.owned(account_id, user.id))
+    account.archived = False
+    db.session.commit()
+    return account

@@ -40,3 +40,28 @@ $env:DATABASE_URL='mysql+pymysql://user:pass@host/db?charset=utf8mb4'
 ```
 
 Nightly alert job: `python -m scripts.nightly`.
+
+## Dữ liệu mock từ sao kê
+
+Sau khi chạy migration, có thể tạo user demo, 3 tài khoản BIDV/MB/VPBank,
+giao dịch và ngân sách từ bộ CSV giả lập. Lệnh có thể chạy lại an toàn mà không
+nhân đôi giao dịch:
+
+```powershell
+$env:MOCK_USER_PASSWORD='SmartExpenseMock1!'
+python -m scripts.seed_mock --source-dir 'D:\.Giả lập dữ liệu'
+```
+
+Email mặc định là `demo@smartexpense.local`. Seed chỉ lưu bốn số cuối tài khoản,
+không lưu số tài khoản đầy đủ hoặc thông tin định danh trong phần metadata sao kê.
+Mặc định lệnh đọc 283 dòng gốc và sinh thêm 19.717 giao dịch xác định để đạt đúng
+20.000 dòng theo NFR-08, với tỷ lệ BIDV/MB/VPBank xấp xỉ 15%/72%/13%. Dữ liệu
+trải từ 2024-01-01 đến 2026-08-19. Có thể điều chỉnh quy mô và khoảng thời gian:
+
+```powershell
+python -m scripts.seed_mock --synthetic-count 50000 --random-seed 42 `
+  --start-date 2022-01-01 --end-date 2026-08-19
+```
+
+Cùng bộ tham số có thể chạy lại mà không nhân đôi. Đổi `--random-seed` sẽ tạo
+một tập giao dịch khác.

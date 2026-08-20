@@ -89,6 +89,18 @@ class FirstFiveUseCasesTest(unittest.TestCase):
         self.assertEqual(rejected.status_code, 400)
         self.assertEqual(self.client.delete(f"/accounts/{account_id}").status_code, 200)
         self.assertTrue(db.session.get(Account, account_id).archived)
+        listed = next(item for item in self.client.get("/accounts").get_json()["items"] if item["id"] == account_id)
+        self.assertTrue(listed["archived"])
+        self.client.post("/auth/logout")
+        self.register_and_login("other@example.com")
+        self.assertEqual(self.client.post(f"/accounts/{account_id}/restore").status_code, 404)
+        self.assertTrue(db.session.get(Account, account_id).archived)
+        self.client.post("/auth/logout")
+        self.assertEqual(self.login().status_code, 200)
+        restored = self.client.post(f"/accounts/{account_id}/restore")
+        self.assertEqual(restored.status_code, 200)
+        self.assertFalse(restored.get_json()["archived"])
+        self.assertFalse(db.session.get(Account, account_id).archived)
 
     def test_uc04_transaction_crud_filters_paginates_and_hides_other_users(self):
         self.register_and_login()

@@ -31,3 +31,9 @@ def update_account(account_id):
 @login_required
 def archive_account(account_id):
     return validation_response(lambda: (service.archive(current_user, account_id), jsonify(message="Đã lưu trữ tài khoản"))[1])
+
+
+@accounts_bp.post("/<int:account_id>/restore")
+@login_required
+def restore_account(account_id):
+    return validation_response(lambda: jsonify(account_json(service.restore(current_user, account_id))))
