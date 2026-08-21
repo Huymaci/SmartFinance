@@ -43,20 +43,21 @@ Nightly alert job: `python -m scripts.nightly`.
 
 ## Dữ liệu mock từ sao kê
 
-Sau khi chạy migration, có thể tạo user demo, 3 tài khoản BIDV/MB/VPBank,
-giao dịch và ngân sách từ bộ CSV giả lập. Lệnh có thể chạy lại an toàn mà không
-nhân đôi giao dịch:
+Sau khi chạy migration, có thể tạo user demo và 20.000 giao dịch mang cấu trúc
+mô tả của ba mẫu sao kê. Dòng tiền được mô phỏng theo tháng: MB nhận lương
+25–30 triệu, chuyển tiền sang BIDV để chi tiêu (gồm đúng 3 triệu tiền nhà) và
+chuyển phần muốn giữ sang VPBank (tài khoản thanh toán, không phải tiết kiệm).
+Lần đầu chuyển từ bộ mock cũ sang mô hình này, dùng chế độ thay thế có giới hạn:
 
 ```powershell
 $env:MOCK_USER_PASSWORD='SmartExpenseMock1!'
-python -m scripts.seed_mock --source-dir 'D:\.Giả lập dữ liệu'
+python -m scripts.seed_mock --replace-demo-data
 ```
 
-Email mặc định là `demo@smartexpense.local`. Seed chỉ lưu bốn số cuối tài khoản,
-không lưu số tài khoản đầy đủ hoặc thông tin định danh trong phần metadata sao kê.
-Mặc định lệnh đọc 283 dòng gốc và sinh thêm 19.717 giao dịch xác định để đạt đúng
-20.000 dòng theo NFR-08, với tỷ lệ BIDV/MB/VPBank xấp xỉ 15%/72%/13%. Dữ liệu
-trải từ 2024-01-01 đến 2026-08-19. Có thể điều chỉnh quy mô và khoảng thời gian:
+Email mặc định là `demo@smartexpense.local`. Chế độ thay thế chỉ xóa dữ liệu tài
+chính thuộc user này, giữ nguyên user khác và dữ liệu cấu hình dùng chung. Chạy
+lại cùng tham số không nhân đôi. Dữ liệu mặc định trải từ 2024-01-01 đến
+2026-08-19 và đạt đúng 20.000 dòng theo NFR-08. Có thể điều chỉnh quy mô:
 
 ```powershell
 python -m scripts.seed_mock --synthetic-count 50000 --random-seed 42 `
@@ -64,4 +65,5 @@ python -m scripts.seed_mock --synthetic-count 50000 --random-seed 42 `
 ```
 
 Cùng bộ tham số có thể chạy lại mà không nhân đôi. Đổi `--random-seed` sẽ tạo
-một tập giao dịch khác.
+một tập giao dịch khác. Ba CSV gốc chỉ được dùng làm mẫu ngôn ngữ; nếu cần nhập
+nguyên văn để kiểm thử parser, truyền thêm `--include-source`.

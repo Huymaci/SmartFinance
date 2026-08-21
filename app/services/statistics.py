@@ -16,9 +16,10 @@ def _next_month(value):
 def dashboard(user_id, month=None):
     start = month_start(month or date.today().replace(day=1))
     end = _next_month(start)
-    rows = db.session.execute(select(Transaction.direction, func.coalesce(func.sum(Transaction.amount), 0)).where(
+    rows = db.session.execute(select(Transaction.direction, func.coalesce(func.sum(Transaction.amount), 0)).join(Category).where(
         Transaction.posted_at >= start, Transaction.posted_at < end,
         Transaction.account.has(Account.ledger.has(user_id=user_id)),
+        Category.name != "Chuyển khoản",
     ).group_by(Transaction.direction)).all()
     totals = dict(rows)
     spent = spent_by_category(user_id, start)
@@ -41,6 +42,7 @@ def breakdown(user_id, date_from, date_to):
     rows = db.session.execute(select(Category.id, Category.name, func.sum(Transaction.amount)).join(Transaction).where(
         Transaction.direction == "OUT", Transaction.posted_at >= start, Transaction.posted_at < end,
         Transaction.account.has(Account.ledger.has(user_id=user_id)),
+        Category.name != "Chuyển khoản",
     ).group_by(Category.id, Category.name).order_by(func.sum(Transaction.amount).desc())).all()
     return [{"category_id": item[0], "category": item[1], "amount": item[2]} for item in rows]
 
@@ -55,9 +57,10 @@ def trend(user_id, through=None):
     result = []
     for start in months:
         end = _next_month(start)
-        rows = dict(db.session.execute(select(Transaction.direction, func.coalesce(func.sum(Transaction.amount), 0)).where(
+        rows = dict(db.session.execute(select(Transaction.direction, func.coalesce(func.sum(Transaction.amount), 0)).join(Category).where(
             Transaction.posted_at >= start, Transaction.posted_at < end,
             Transaction.account.has(Account.ledger.has(user_id=user_id)),
+            Category.name != "Chuyển khoản",
         ).group_by(Transaction.direction)).all())
         result.append({"month": start.strftime("%Y-%m"), "income": rows.get("IN", 0), "expense": rows.get("OUT", 0)})
     return result

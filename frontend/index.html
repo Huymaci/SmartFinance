@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Prototype giao diện SmartFinance - quản lý tài chính cá nhân">
   <title>SmartFinance — Tài chính rõ ràng, mỗi ngày</title>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <section class="auth-screen" id="auth-screen" aria-label="Đăng nhập SmartFinance">
     <div class="auth-intro"><a class="brand" href="/"><span class="brand-mark">S</span><span>Smart<span>Finance</span></span></a><div><p class="eyebrow">TÀI CHÍNH RÕ RÀNG, MỖI NGÀY</p><h1>Biết tiền của bạn<br>đang đi về đâu.</h1><p>Theo dõi chi tiêu, chủ động ngân sách và nhận cảnh báo sớm trước khi vượt mức.</p></div><small>Riêng tư theo thiết kế · Không kết nối tài khoản ngân hàng</small></div>
-    <div class="auth-form-wrap"><div class="language-switcher auth-language" role="group" aria-label="Language"><button type="button" data-language="vi">VI</button><span>|</span><button type="button" data-language="en">EN</button></div>
+    <div class="auth-form-wrap"><div class="auth-preferences"><div class="language-switcher auth-language" role="group" aria-label="Language"><button type="button" data-language="vi">VI</button><span>|</span><button type="button" data-language="en">EN</button></div><button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Chế độ tối" aria-pressed="false" title="Bật chế độ tối"><span data-theme-icon aria-hidden="true">☾</span></button></div>
       <form class="auth-form" id="login-form"><p class="eyebrow">CHÀO MỪNG TRỞ LẠI</p><h2>Đăng nhập</h2><p>Tiếp tục hành trình tài chính của bạn.</p><label>Email<input name="email" type="email" autocomplete="email" required placeholder="ban@example.com"></label><label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required placeholder="Tối thiểu 10 ký tự"></label><p class="form-error" role="alert"></p><button class="primary-btn full" type="submit">Đăng nhập</button><p class="auth-switch">Chưa có tài khoản? <button type="button" data-auth="register">Đăng ký ngay</button></p></form>
       <form class="auth-form hidden" id="register-form"><p class="eyebrow">BẮT ĐẦU AN TOÀN</p><h2>Tạo tài khoản</h2><div class="form-grid two"><label>Họ và tên<input name="full_name" required></label><label>Ngày sinh<input name="date_of_birth" type="date" required></label></div><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Mật khẩu<input name="password" type="password" autocomplete="new-password" minlength="10" required></label><label class="consent"><input name="consent" type="checkbox"><span id="privacy-notice">Tôi đồng ý cho hệ thống xử lý dữ liệu nhằm quản lý tài chính cá nhân.</span></label><p class="form-error" role="alert"></p><button class="primary-btn full" type="submit">Tạo tài khoản</button><p class="auth-switch">Đã có tài khoản? <button type="button" data-auth="login">Đăng nhập</button></p></form>
     </div>
@@ -25,12 +26,20 @@
       <a class="nav-item" href="#transactions" data-view="transactions"><span>↕</span>Giao dịch</a>
       <a class="nav-item" href="#import" data-view="import"><span>⇧</span>Nhập sao kê</a>
       <a class="nav-item" href="#budgets" data-view="budgets"><span>◫</span>Ngân sách</a>
-      <a class="nav-item" href="#alerts" data-view="alerts"><span>♢</span>Cảnh báo <b class="nav-badge">3</b></a>
+      <a class="nav-item" href="#alerts" data-view="alerts"><span>♢</span>Cảnh báo <b class="nav-badge hidden">0</b></a>
       <a class="nav-item" href="#statistics" data-view="statistics"><span>⌁</span>Thống kê</a>
     </nav>
     <div class="sidebar-foot">
       <div class="privacy-note"><span>✓</span><p><b>Dữ liệu của bạn</b><br>Riêng tư và chỉ thuộc về bạn</p></div>
-      <button class="profile-mini" type="button" data-action="profile"><span class="avatar">LA</span><span><b>Lan Anh</b><small>lan***@gmail.com</small></span><span>⋯</span></button>
+      <div class="profile-mini">
+        <button class="avatar profile-avatar" type="button" data-action="accounts" aria-label="Mở tài khoản">LA</button>
+        <span class="profile-identity"><b>Lan Anh</b><small>lan***@gmail.com</small></span>
+        <button class="profile-more" type="button" aria-label="Mở cài đặt" aria-haspopup="menu" aria-expanded="false">⋯</button>
+        <div class="profile-preferences hidden" role="menu">
+          <section><b>Giao diện</b><div class="preference-options" role="group" aria-label="Giao diện"><button type="button" data-theme-choice="light">Sáng</button><button type="button" data-theme-choice="dark">Tối</button><button type="button" data-theme-choice="system">Theo hệ thống</button></div></section>
+          <section><b>Ngôn ngữ</b><div class="preference-options" role="group" aria-label="Ngôn ngữ"><button type="button" data-language="vi">Tiếng Việt</button><button type="button" data-language="en">English</button></div></section>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -39,9 +48,7 @@
       <button class="icon-btn menu-toggle" type="button" aria-label="Mở menu">☰</button>
       <div class="breadcrumb"><span id="page-kicker">Tài chính cá nhân</span><b id="page-title">Tổng quan</b></div>
       <div class="top-actions">
-        <div class="language-switcher" role="group" aria-label="Language"><button type="button" data-language="vi">VI</button><span>|</span><button type="button" data-language="en">EN</button></div>
-        <button class="icon-btn notification-btn" type="button" data-go="alerts" aria-label="Cảnh báo mới">♢<span></span></button>
-        <button class="secondary-btn" type="button" data-action="accounts">Tài khoản</button><button class="primary-btn" type="button" data-action="add-transaction">＋ Giao dịch mới</button>
+        <button class="primary-btn" type="button" data-action="add-transaction">＋ Giao dịch mới</button>
       </div>
     </header>
 
@@ -112,12 +119,7 @@
     <section class="view" id="budgets" data-title="Ngân sách" data-kicker="Kế hoạch tháng">
       <div class="page-heading"><div><p class="eyebrow">KẾ HOẠCH THÁNG 8</p><h1>Ngân sách của bạn</h1><p>Chủ động phân bổ và theo dõi tốc độ chi tiêu.</p></div><div class="heading-actions"><button class="secondary-btn" data-action="toast">Sao chép tháng trước</button><button class="primary-btn" data-action="budget">＋ Thêm ngân sách</button></div></div>
       <div class="budget-summary"><div><small>TỔNG NGÂN SÁCH</small><strong>24.500.000 ₫</strong></div><div><small>ĐÃ CHI</small><strong>18.240.000 ₫</strong></div><div><small>CÒN LẠI</small><strong class="good-text">6.260.000 ₫</strong></div><div class="ring" style="--value:74"><span><b>74%</b><small>đã dùng</small></span></div></div>
-      <div class="category-cards" id="budget-cards">
-        <article class="category-card"><div><span class="cat-icon home">⌂</span><span><b>Nhà ở</b><small>Chi phí cam kết</small></span><button>⋯</button></div><strong>6.500.000 ₫ <small>/ 7.000.000 ₫</small></strong><div class="progress large"><i class="good" style="width:93%"></i></div><p><span class="good-text">Trong kế hoạch</span><span>Còn 500.000 ₫</span></p></article>
-        <article class="category-card"><div><span class="cat-icon food">♨</span><span><b>Ăn uống</b><small>Chi tiêu linh hoạt</small></span><button>⋯</button></div><strong>4.160.000 ₫ <small>/ 5.000.000 ₫</small></strong><div class="progress large"><i class="warning" style="width:83%"></i></div><p><span class="warning-text">Sắp chạm mức</span><span>Còn 840.000 ₫</span></p></article>
-        <article class="category-card danger-border"><div><span class="cat-icon shop">▱</span><span><b>Mua sắm</b><small>Chi tiêu linh hoạt</small></span><button>⋯</button></div><strong>3.240.000 ₫ <small>/ 3.000.000 ₫</small></strong><div class="progress large"><i class="danger" style="width:100%"></i></div><p><span class="danger-text">Vượt 240.000 ₫</span><span>108%</span></p></article>
-        <article class="category-card"><div><span class="cat-icon travel">◆</span><span><b>Di chuyển</b><small>Chi phí bán cố định</small></span><button>⋯</button></div><strong>1.890.000 ₫ <small>/ 2.500.000 ₫</small></strong><div class="progress large"><i class="good" style="width:76%"></i></div><p><span class="good-text">Trong kế hoạch</span><span>Còn 610.000 ₫</span></p></article>
-      </div>
+      <div class="category-cards" id="budget-cards"></div>
     </section>
 
     <section class="view" id="alerts" data-title="Cảnh báo" data-kicker="Trợ lý tài chính">

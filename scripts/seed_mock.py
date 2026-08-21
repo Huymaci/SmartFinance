@@ -1,35 +1,36 @@
-"""Seed realistic SmartExpense demo data from the supplied mock bank statements.
+"""Seed a realistic monthly cash flow using the supplied statements as patterns.
 
 Usage (after migrations):
-    python -m scripts.seed_mock --source-dir "D:\\.Giả lập dữ liệu"
+    python -m scripts.seed_mock --replace-demo-data
 
-The command is idempotent: users/accounts/categories/budgets are reused and
-transactions are de-duplicated with the same key as the statement importer.
+The command is idempotent. MB receives salary, funds BIDV for spending, and
+moves retained cash to a normal VPBank payment account (not a savings product).
 """
 
 import argparse
 import csv
+import hashlib
 import os
 import random
 import re
+from calendar import monthrange
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from werkzeug.security import generate_password_hash
 
 from app import create_app
 from app.extensions import db
-from app.models import Account, Budget, Category, Ledger, Transaction, User
+from app.models import Account, Alert, Budget, Category, ImportBatch, ImportError, Ledger, Transaction, User
 from app.services.imports import dedup_key
 
 DEFAULT_SOURCE_DIR = Path(r"D:\.Giả lập dữ liệu")
 MOCK_EMAIL = "demo@smartexpense.local"
 MOCK_PASSWORD = "SmartExpenseMock1!"
-# The three source statements contain 283 rows. Adding 19,717 reaches the
-# 20,000-transaction dataset required by NFR-08 in the slim SRS.
-DEFAULT_SYNTHETIC_COUNT = 19_717
+# The default reaches the 20,000-transaction dataset required by NFR-08.
+DEFAULT_SYNTHETIC_COUNT = 20_000
 DEFAULT_RANDOM_SEED = 20260820
 DEFAULT_START_DATE = date(2024, 1, 1)
 DEFAULT_END_DATE = date(2026, 8, 19)
@@ -59,21 +60,24 @@ CATEGORY_DEFINITIONS = (
 )
 
 
-# category, direction, weight, min/max amount and descriptions. The relative
-# frequencies and merchant vocabulary are based on the three supplied files.
-SYNTHETIC_PROFILES = (
-    ("Ăn uống", "OUT", 30, 20_000, 280_000, ("THANH TOAN AN UONG COM VAN PHONG", "PHO 24", "HIGHLANDS COFFEE", "BUN CHA HA NOI", "LOTTERIA")),
-    ("Mua sắm", "OUT", 20, 35_000, 1_800_000, ("LAZADA THANH TOAN DON HANG", "SHOPEE MUA SAM", "WINMART MUA THUC PHAM", "CO.OP FOOD", "UNIQLO")),
-    ("Di chuyển", "OUT", 15, 10_000, 450_000, ("THANH TOAN GRAB", "THANH TOAN BE", "DI CHUYEN XANH SM", "HANOI METRO", "DO XANG PETROLIMEX")),
-    ("Điện nước", "OUT", 5, 120_000, 1_500_000, ("THANH TOAN TIEN DIEN EVNHANOI", "THANH TOAN TIEN NUOC HAWACOM")),
-    ("Viễn thông", "OUT", 5, 50_000, 550_000, ("THANH TOAN CUOC INTERNET VIETTEL", "NAP TIEN DIEN THOAI", "THANH TOAN FPT TELECOM")),
-    ("Y tế", "OUT", 4, 50_000, 3_500_000, ("NHA THUOC LONG CHAU", "KHAM BENH MEDLATEC", "THANH TOAN BENH VIEN")),
-    ("Học tập", "OUT", 4, 25_000, 2_500_000, ("CHI PHI HOC TAP", "FAHASA MUA SACH", "PHOTO NGUYEN PHONG IN TAI LIEU")),
-    ("Nhà ở", "OUT", 3, 2_500_000, 7_500_000, ("CHUYEN TIEN NHA TRO", "THANH TOAN TIEN NHA")),
-    ("Thu nhập", "IN", 5, 1_000_000, 28_000_000, ("LUONG THANG CONG TY TNHH CONG NGHE VIET", "THU NHAP FREELANCE", "THUONG DU AN")),
-    ("Chuyển khoản", None, 7, 100_000, 8_000_000, ("NGUYEN TUAN HUY CHUYEN TIEN", "NHAN TIEN CHUYEN KHOAN", "CHUYEN TIEN CHI TIEU")),
-    ("Khác", "OUT", 2, 20_000, 2_000_000, ("THANH TOAN DICH VU", "PHI DICH VU NGAN HANG", "CHI TIEU KHAC")),
+# category, weight and BIDV spending descriptions. Salary, rent and internal
+# transfers are generated separately so their monthly cash-flow invariants hold.
+SPENDING_PROFILES = (
+    ("Ăn uống", 35, ("THANH TOAN AN UONG COM VAN PHONG", "PHO 24", "HIGHLANDS COFFEE", "BUN CHA HA NOI", "LOTTERIA")),
+    ("Mua sắm", 22, ("LAZADA THANH TOAN DON HANG", "SHOPEE MUA SAM", "WINMART MUA THUC PHAM", "CO.OP FOOD", "CIRCLE K")),
+    ("Di chuyển", 18, ("THANH TOAN GRAB", "THANH TOAN BE", "DI CHUYEN XANH SM", "HANOI METRO", "DO XANG PETROLIMEX")),
+    ("Điện nước", 7, ("THANH TOAN TIEN DIEN EVNHANOI", "THANH TOAN TIEN NUOC HAWACOM")),
+    ("Viễn thông", 5, ("THANH TOAN CUOC INTERNET VIETTEL", "NAP TIEN DIEN THOAI", "THANH TOAN FPT TELECOM")),
+    ("Y tế", 4, ("NHA THUOC LONG CHAU", "KHAM BENH MEDLATEC", "THANH TOAN BENH VIEN")),
+    ("Học tập", 5, ("CHI PHI HOC TAP", "FAHASA MUA SACH", "PHOTO NGUYEN PHONG IN TAI LIEU")),
+    ("Khác", 4, ("THANH TOAN DICH VU", "PHI DICH VU NGAN HANG", "CHI TIEU KHAC")),
 )
+
+ACCOUNT_SPECS = {
+    "MB": {"name": "MB Bank - Tài khoản nhận lương", "last_four": "2001", "opening_balance": 5_000_000},
+    "BIDV": {"name": "BIDV - Tài khoản chi tiêu", "last_four": "4789", "opening_balance": 2_000_000},
+    "VPB": {"name": "VPBank - Tài khoản giữ tiền", "last_four": "7537", "opening_balance": 0},
+}
 
 
 def _read_csv(path):
@@ -130,10 +134,9 @@ def parse_vpbank(path):
     return result
 
 
-def _random_timestamp(rng, start_date, end_date):
-    start = datetime.combine(start_date, datetime.min.time())
-    seconds = int((datetime.combine(end_date + timedelta(days=1), datetime.min.time()) - start).total_seconds())
-    return start + timedelta(seconds=rng.randrange(seconds))
+def _stable_seed(seed, *parts):
+    value = "|".join((str(seed), *(str(part) for part in parts)))
+    return int.from_bytes(hashlib.sha256(value.encode("utf-8")).digest()[:8], "big")
 
 
 def _synthetic_description(bank_code, base, direction, rng):
@@ -159,38 +162,89 @@ def _synthetic_ref(bank_code, posted_at, seed, index, rng):
     return f"FT{posted_at:%y%m%d}{suffix}"
 
 
+def _monthly_amounts(total, count, rng, minimum=5_000):
+    """Split a monthly spending target into positive, 1,000-VND amounts."""
+    if count == 0:
+        return []
+    minimum_units = minimum // 1_000
+    total_units = total // 1_000
+    if total_units < count * minimum_units:
+        raise ValueError("Số giao dịch quá lớn so với ngân sách chi tiêu tháng")
+    remaining = total_units - count * minimum_units
+    weights = [rng.expovariate(1) for _ in range(count)]
+    weight_total = sum(weights)
+    raw = [remaining * weight / weight_total for weight in weights]
+    extra = [int(value) for value in raw]
+    for index in sorted(range(count), key=lambda item: raw[item] - extra[item], reverse=True)[:remaining - sum(extra)]:
+        extra[index] += 1
+    return [(minimum_units + value) * 1_000 for value in extra]
+
+
+def _recurring_rows(month, salary, bidv_transfer, vpbank_transfer):
+    label = month.strftime("%m/%Y")
+    salary_ref = f"SALARY-MB-{month:%Y%m}"
+    rent_ref = f"RENT-MB-{month:%Y%m}"
+    bidv_ref = f"XFER-MB-BIDV-{month:%Y%m}"
+    vpbank_ref = f"XFER-MB-VPB-{month:%Y%m}"
+    return {
+        "MB": [
+            StatementRow(datetime(month.year, month.month, 5, 9, 5), salary, f"LUONG THANG {label} CONG TY TNHH CONG NGHE VIET", salary_ref, "Thu nhập"),
+            StatementRow(datetime(month.year, month.month, 6, 10, 20), -bidv_transfer, f"CHUYEN SANG BIDV DE CHI TIEU THANG {label}", bidv_ref, "Chuyển khoản"),
+            StatementRow(datetime(month.year, month.month, 7, 10, 30), -vpbank_transfer, f"CHUYEN SANG VPBANK DE GIU TIEN THANG {label}", vpbank_ref, "Chuyển khoản"),
+        ],
+        "BIDV": [
+            StatementRow(datetime(month.year, month.month, 6, 10, 20), bidv_transfer, f"NHAN TIEN TU MB DE CHI TIEU THANG {label}", bidv_ref, "Chuyển khoản"),
+            StatementRow(datetime(month.year, month.month, 7, 8, 0), -3_000_000, f"THANH TOAN TIEN THUE NHA THANG {label}", rent_ref, "Nhà ở"),
+        ],
+        "VPB": [
+            StatementRow(datetime(month.year, month.month, 7, 10, 30), vpbank_transfer, f"NHAN TIEN TU MB DE GIU TIEN THANG {label}", vpbank_ref, "Chuyển khoản"),
+        ],
+    }
+
+
 def generate_synthetic_rows(total_count, start_date=DEFAULT_START_DATE, end_date=DEFAULT_END_DATE, seed=DEFAULT_RANDOM_SEED):
-    """Return deterministic statement-like rows split across the three banks."""
+    """Build a deterministic salary -> spending/holding cash-flow dataset."""
     if total_count < 0:
         raise ValueError("Số giao dịch synthetic không được âm")
     if end_date < start_date:
         raise ValueError("Ngày kết thúc phải từ ngày bắt đầu trở đi")
+    if start_date.day != 1 or end_date.day < 7:
+        raise ValueError("Khoảng seed phải bắt đầu từ ngày 01 và kết thúc không sớm hơn ngày 07")
 
-    bidv_count = total_count * 15 // 100
-    mb_count = total_count * 72 // 100
-    counts = {"BIDV": bidv_count, "MB": mb_count, "VPB": total_count - bidv_count - mb_count}
-    population = list(SYNTHETIC_PROFILES)
-    weights = [profile[2] for profile in population]
-    result = {}
-    for bank_offset, (bank_code, count) in enumerate(counts.items(), start=1):
-        rng = random.Random(seed + bank_offset * 1_000_003)
-        rows = []
-        for index in range(1, count + 1):
-            category, fixed_direction, _, minimum, maximum, descriptions = rng.choices(population, weights=weights, k=1)[0]
-            direction = fixed_direction or ("IN" if rng.random() < 0.35 else "OUT")
-            posted_at = _random_timestamp(rng, start_date, end_date)
-            amount = rng.randrange((minimum + 999) // 1_000, maximum // 1_000 + 1) * 1_000
+    months = list(_month_starts(start_date, end_date))
+    recurring_count = len(months) * 6
+    if total_count < recurring_count:
+        raise ValueError(f"Cần ít nhất {recurring_count} giao dịch để bảo toàn dòng tiền theo tháng")
+    expense_count, remainder = divmod(total_count - recurring_count, len(months))
+    population = list(SPENDING_PROFILES)
+    weights = [profile[1] for profile in population]
+    result = {"BIDV": [], "MB": [], "VPB": []}
+    for month_index, month in enumerate(months):
+        rng = random.Random(_stable_seed(seed, month.strftime("%Y-%m")))
+        salary = rng.randrange(250, 301) * 100_000
+        bidv_transfer = rng.randrange(140, 181) * 100_000
+        vpbank_transfer = salary - bidv_transfer - 2_000_000
+        recurring = _recurring_rows(month, salary, bidv_transfer, vpbank_transfer)
+        for bank_code, rows in recurring.items():
+            result[bank_code].extend(rows)
+
+        count = expense_count + (month_index < remainder)
+        spending_target = bidv_transfer - 3_000_000 - rng.randrange(5, 16) * 100_000
+        amounts = _monthly_amounts(spending_target, count, rng)
+        first_day = start_date.day if month.year == start_date.year and month.month == start_date.month else 1
+        last_day = end_date.day if month.year == end_date.year and month.month == end_date.month else monthrange(month.year, month.month)[1]
+        spending_first_day = max(first_day, 7)
+        for index, amount in enumerate(amounts, start=1):
+            category, _, descriptions = rng.choices(population, weights=weights, k=1)[0]
+            day = rng.randint(spending_first_day, last_day)
+            posted_at = datetime(month.year, month.month, day, rng.randint(7, 22), rng.randint(0, 59), rng.randint(0, 59))
             base = rng.choice(descriptions)
-            description = _synthetic_description(bank_code, base, direction, rng)
-            ref_no = _synthetic_ref(bank_code, posted_at, seed, index, rng)
-            rows.append(StatementRow(
-                posted_at=posted_at,
-                signed_amount=amount if direction == "IN" else -amount,
-                description=description,
-                ref_no=ref_no,
-                category_name=category,
-            ))
-        result[bank_code] = rows
+            description = _synthetic_description("BIDV", base, "OUT", rng)
+            ref_no = _synthetic_ref("BIDV", posted_at, seed, month_index * 10_000 + index, rng)
+            result["BIDV"].append(StatementRow(posted_at, -amount, description, ref_no, category))
+
+    for rows in result.values():
+        rows.sort(key=lambda row: (row.posted_at, row.ref_no))
     return result
 
 
@@ -226,6 +280,36 @@ def _get_or_create(model, defaults=None, **filters):
     return item, True
 
 
+def _clear_demo_data(user):
+    """Delete only financial data owned by one demo user, preserving identity."""
+    if user.role != "USER" or not user.ledger:
+        raise ValueError("Chỉ được thay dữ liệu của demo user có đúng một sổ thu chi")
+    account_ids = list(db.session.scalars(select(Account.id).where(
+        Account.ledger_id == user.ledger.id, Account.bank_code.in_(ACCOUNT_SPECS),
+    )))
+    batches = list(db.session.scalars(select(ImportBatch).where(ImportBatch.account_id.in_(account_ids)))) if account_ids else []
+    foreign_batch = account_ids and db.session.scalar(select(ImportBatch.id).where(
+        ImportBatch.account_id.in_(account_ids), ImportBatch.user_id != user.id,
+    ).limit(1))
+    if foreign_batch:
+        raise ValueError("Tài khoản demo đang được import batch của user khác tham chiếu; đã hủy thay dữ liệu")
+
+    batch_ids = [batch.id for batch in batches]
+    deleted = {"imports": len(batch_ids), "accounts": len(account_ids)}
+    if batch_ids:
+        db.session.execute(delete(ImportError).where(ImportError.batch_id.in_(batch_ids)))
+        db.session.execute(delete(ImportBatch).where(ImportBatch.id.in_(batch_ids)))
+    db.session.execute(delete(Alert).where(Alert.user_id == user.id))
+    db.session.execute(delete(Budget).where(Budget.user_id == user.id))
+    if account_ids:
+        deleted["transactions"] = db.session.execute(delete(Transaction).where(Transaction.account_id.in_(account_ids))).rowcount
+        db.session.execute(delete(Account).where(Account.id.in_(account_ids)))
+    else:
+        deleted["transactions"] = 0
+    db.session.flush()
+    return deleted
+
+
 def _month_starts(start_date, end_date):
     cursor = start_date.replace(day=1)
     final = end_date.replace(day=1)
@@ -242,15 +326,18 @@ def seed_mock(
     random_seed=DEFAULT_RANDOM_SEED,
     start_date=DEFAULT_START_DATE,
     end_date=DEFAULT_END_DATE,
+    include_source=False,
+    replace_demo_data=False,
 ):
     files = {
         "BIDV": (source_dir / "BIDV_gia_lap_7_thang_2026.csv", parse_bidv, "4789"),
         "MB": (source_dir / "MB_gia_lap_7_thang_2026.csv", parse_mb, "2001"),
         "VPB": (source_dir / "VPBank_data_gia_thang_09_2025.csv", parse_vpbank, "7537"),
     }
-    missing = [str(path) for path, _, _ in files.values() if not path.is_file()]
-    if missing:
-        raise FileNotFoundError("Không tìm thấy file sao kê: " + ", ".join(missing))
+    if include_source:
+        missing = [str(path) for path, _, _ in files.values() if not path.is_file()]
+        if missing:
+            raise FileNotFoundError("Không tìm thấy file sao kê: " + ", ".join(missing))
 
     user, created_user = _get_or_create(
         User,
@@ -264,23 +351,31 @@ def seed_mock(
     if not user.ledger:
         user.ledger = Ledger()
         db.session.flush()
+    if replace_demo_data:
+        user = db.session.scalar(select(User).where(User.id == user.id).with_for_update())
+        _clear_demo_data(user)
 
     categories = {}
     for name, nature in CATEGORY_DEFINITIONS:
         categories[name], _ = _get_or_create(Category, name=name, owner_id=None, defaults={"nature": nature})
 
     accounts = {}
-    parsed = {}
-    for bank_code, (path, parser, last_four) in files.items():
-        parsed[bank_code] = parser(path)
+    parsed = {bank_code: parser(path) if include_source else [] for bank_code, (path, parser, _) in files.items()}
+    for bank_code, (_, _, _) in files.items():
+        spec = ACCOUNT_SPECS[bank_code]
         account = db.session.scalar(select(Account).where(Account.ledger_id == user.ledger.id, Account.bank_code == bank_code))
         if not account:
             account = Account(
-                ledger_id=user.ledger.id, name=f"Tài khoản {bank_code}", type="BANK",
-                opening_balance=0, bank_code=bank_code, last_four=last_four,
+                ledger_id=user.ledger.id, name=spec["name"], type="BANK",
+                opening_balance=spec["opening_balance"], bank_code=bank_code,
+                last_four=spec["last_four"], archived=False,
             )
             db.session.add(account)
             db.session.flush()
+        account.name = spec["name"]
+        account.last_four = spec["last_four"]
+        account.opening_balance = spec["opening_balance"]
+        account.archived = False
         accounts[bank_code] = account
 
     synthetic = generate_synthetic_rows(synthetic_count, start_date, end_date, random_seed)
@@ -318,13 +413,14 @@ def seed_mock(
         }
 
     budget_plan = (
-        ("Nhà ở", 6_000_000), ("Điện nước", 1_800_000), ("Ăn uống", 5_000_000),
+        ("Nhà ở", 3_000_000), ("Điện nước", 1_800_000), ("Ăn uống", 6_000_000),
         ("Mua sắm", 4_000_000), ("Di chuyển", 2_000_000), ("Y tế", 2_000_000),
         ("Học tập", 2_500_000), ("Viễn thông", 800_000),
     )
     for month in _month_starts(start_date, end_date):
         for category_name, amount in budget_plan:
-            _get_or_create(Budget, user_id=user.id, category_id=categories[category_name].id, month=month, defaults={"amount": amount})
+            budget, _ = _get_or_create(Budget, user_id=user.id, category_id=categories[category_name].id, month=month, defaults={"amount": amount})
+            budget.amount = amount
 
     db.session.commit()
     from app.services.alerts import recompute
@@ -333,6 +429,7 @@ def seed_mock(
         "email": user.email, "created_user": created_user, "inserted": inserted,
         "skipped": skipped, "accounts": len(accounts), "per_bank": per_bank,
         "synthetic_count": synthetic_count, "alerts_created": alerts_created,
+        "replaced": replace_demo_data, "included_source": include_source,
     }
 
 
@@ -345,6 +442,8 @@ def main():
     parser.add_argument("--random-seed", type=int, default=DEFAULT_RANDOM_SEED, help="Seed để tái tạo cùng một bộ dữ liệu")
     parser.add_argument("--start-date", type=date.fromisoformat, default=DEFAULT_START_DATE, metavar="YYYY-MM-DD")
     parser.add_argument("--end-date", type=date.fromisoformat, default=DEFAULT_END_DATE, metavar="YYYY-MM-DD")
+    parser.add_argument("--include-source", action="store_true", help="Nhập thêm 3 CSV gốc (không dùng cho bộ demo dòng tiền chuẩn)")
+    parser.add_argument("--replace-demo-data", action="store_true", help="Xóa và tạo lại dữ liệu tài chính của đúng demo user")
     args = parser.parse_args()
     application = create_app()
     with application.app_context():
@@ -354,6 +453,8 @@ def main():
             random_seed=args.random_seed,
             start_date=args.start_date,
             end_date=args.end_date,
+            include_source=args.include_source,
+            replace_demo_data=args.replace_demo_data,
         )
     print(f"Seeded {result['inserted']} transactions; skipped {result['skipped']} existing rows.")
     for bank, counts in result["per_bank"].items():
